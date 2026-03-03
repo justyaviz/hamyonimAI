@@ -1,3 +1,9 @@
+from fastapi import FastAPI, Request
+# boshqa importlar...
+
+app = FastAPI()
+
+# keyin bot, dp, webhook va qolgan kodlar...
 import aiosqlite
 from datetime import datetime, date
 
