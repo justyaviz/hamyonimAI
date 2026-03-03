@@ -54,8 +54,9 @@ UPSELL_TEXT = (
 def main_kb():
     # Telegram WebApp tugmasi
     web_btn = KeyboardButton(
-        text="📊 Dashboard",
-        web_app=WebAppInfo(url=f"{WEBHOOK_URL}/app") if WEBHOOK_URL else None
+    text="📊 Dashboard",
+    web_app=WebAppInfo(url=f"https://{WEBHOOK_URL.replace('https://','')}/app")
+) if WEBHOOK_URL else None
     )
 
     return ReplyKeyboardMarkup(
