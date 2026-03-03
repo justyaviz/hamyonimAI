@@ -181,10 +181,12 @@ async def on_startup():
     if WEBHOOK_URL:
         await bot.set_webhook(f"{WEBHOOK_URL}/webhook")
 
+from aiogram.types import Update
+
 @app.post("/webhook")
 async def webhook(request: Request):
     data = await request.json()
-    update = dp.update_type.model_validate(data)  # aiogram v3 friendly
+    update = Update.model_validate(data)
     await dp.feed_update(bot, update)
     return {"ok": True}
 
