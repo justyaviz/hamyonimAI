@@ -52,11 +52,17 @@ UPSELL_TEXT = (
 
 # ------------------ UI ------------------
 def main_kb():
-    # Telegram WebApp tugmasi
+    # WebApp URL faqat HTTPS bo‘lishi kerak
+    web_url = None
+    if WEBHOOK_URL:
+        url = WEBHOOK_URL.strip()
+        if not url.startswith("https://"):
+            url = "https://" + url.lstrip("/")
+        web_url = url + "/app"
+
     web_btn = KeyboardButton(
-    text="📊 Dashboard",
-    web_app=WebAppInfo(url=f"https://{WEBHOOK_URL.replace('https://','')}/app")
-) if WEBHOOK_URL else None
+        text="📊 Dashboard",
+        web_app=WebAppInfo(url=web_url) if web_url else None
     )
 
     return ReplyKeyboardMarkup(
