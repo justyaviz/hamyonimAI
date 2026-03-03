@@ -3,6 +3,7 @@ from datetime import datetime
 
 DB_PATH = "hamyonim.db"
 
+
 async def init_db():
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("""
@@ -58,6 +59,7 @@ async def init_db():
         """)
         await db.commit()
 
+
 async def ensure_user(user_id: int):
     async with aiosqlite.connect(DB_PATH) as db:
         cur = await db.execute("SELECT user_id FROM users WHERE user_id=?", (user_id,))
@@ -69,24 +71,47 @@ async def ensure_user(user_id: int):
             )
             await db.commit()
 
-async def get_user(user_id: int):
+
+async def add_tx(user_id: int, ttype: str, amount: int, category: str, note: str | None):
     async with aiosqlite.connect(DB_PATH) as db:
-        cur = await db.execute("SELECT user_id, plan, sub_expires_at, is_banned FROM users WHERE user_id=?", (user_id,))
-        return await cur.fetchone()
+        await db.execute(
+            "INSERT INTO tx(user_id, ttype, amount, category, note, created_at) VALUES(?,?,?,?,?,?)",
+            (user_id, ttype, amount, category, note, datetime.now().isoformat(timespec="seconds"))
+        )
+        await db.commit()
+
+
+async def get_month_stats(user_id: int):
+    """Returns (income_sum, expense_sum) for current month."""
+    from datetime import date
+    prefix = date.today().strftime("%Y-%m")  # '2026-03'
+    async with aiosqlite.connect(DB_PATH) as db:
+        cur1 = await db.execute(
+            "SELECT COALESCE(SUM(amount),0) FROM tx WHERE user_id=? AND ttype='income' AND substr(created_at,1,7)=?",
+            (user_id, prefix)
+        )
+        inc = (await cur1.fetchone())[0]
+        cur2 = await db.execute(
+            "SELECT COALESCE(SUM(amount),0) FROM tx WHERE user_id=? AND ttype='expense' AND substr(created_at,1,7)=?",
+            (user_id, prefix)
+        )
+        exp = (await cur2.fetchone())[0]
+    return int(inc), int(exp)
+
+
+async def add_payment(user_id: int, plan: str, amount: int, status: str, payload: str | None = None):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            "INSERT INTO payments(user_id, plan, amount, status, payload, created_at) VALUES(?,?,?,?,?,?)",
+            (user_id, plan, amount, status, payload, datetime.now().isoformat(timespec="seconds"))
+        )
+        await db.commit()
+
 
 async def set_subscription(user_id: int, plan: str, expires_at_iso: str):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
             "UPDATE users SET plan=?, sub_expires_at=? WHERE user_id=?",
             (plan, expires_at_iso, user_id)
-        )
-        await db.commit()
-
-async def add_payment(user_id: int, plan: str, amount: int, status: str, payload: str | None = None):
-    from datetime import datetime
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute(
-            "INSERT INTO payments(user_id, plan, amount, status, payload, created_at) VALUES(?,?,?,?,?,?)",
-            (user_id, plan, amount, status, payload, datetime.now().isoformat(timespec="seconds"))
         )
         await db.commit()
